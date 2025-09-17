@@ -26,7 +26,7 @@ fn kmem_from_kvdata(data: &KVData, file_id: u8, voffset: u32) -> KMem {
 }
 
 
-fn transform_u32_to_array_of_u8(x:u32) -> [u8;4] {
+fn u32_to_4u8(x:u32) -> [u8;4] {
     let b1 : u8 = ((x >> 24) & 0xff) as u8;
     let b2 : u8 = ((x >> 16) & 0xff) as u8;
     let b3 : u8 = ((x >> 8) & 0xff) as u8;
@@ -57,9 +57,9 @@ impl KVData {
     }
     fn to_bytes(&self) -> Vec<u8> {
         let mut byte: Vec<u8> = Vec::new();
-        let ts_bytes = transform_u32_to_array_of_u8(self.timestamp);
-        let ksz_bytes = transform_u32_to_array_of_u8(self.ksz);
-        let vsz_bytes = transform_u32_to_array_of_u8(self.vsz);
+        let ts_bytes = u32_to_4u8(self.timestamp);
+        let ksz_bytes = u32_to_4u8(self.ksz);
+        let vsz_bytes = u32_to_4u8(self.vsz);
         byte.extend(&ts_bytes);
         byte.extend(&ksz_bytes);
         byte.extend(&vsz_bytes);
