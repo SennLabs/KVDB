@@ -6,7 +6,6 @@ use std::io::Read;
 use std::time::SystemTime;
 use std::str::Bytes;
 
-
 mod dbconfig;
 
 
@@ -73,7 +72,7 @@ impl KVData {
 }
 
 
-fn set_kv(key_string: String, value_string: String, active_file_id: u8, offset: u32) -> (KVData, KMem, u32) {
+fn build_kv(key_string: String, value_string: String, active_file_id: u8, offset: u32) -> (KVData, KMem, u32) {
     let new_pair = KVData::new(key_string, value_string);
     let kmem_entry = kmem_from_kvdata(&new_pair, active_file_id, offset);
     let new_offset = offset + new_pair.to_bytes().len() as u32; // 32 bits timestamp + 16 bits ksz + 16 bits vsz + key size + value size
@@ -127,40 +126,140 @@ fn init_new_file() -> (u32, Vec<KMem>, Vec<u8>){
 
 
 
+fn add_new_kv(newkey: String, newvalue: String, active_file_id: u8, offset: u32, key_set: &mut Vec<KMem>, active_datafile: &mut Vec<u8>) -> u32 {
 
-fn main() {
-    let config = dbconfig::load_config().unwrap();
+        let (new_pair, kmem_entry, new_offset) = build_kv(newkey, newvalue, active_file_id, offset);
 
-    let active_file_id: u8 = init_file_id(config.directorypath.as_str());
-    let (mut offset, mut key_set, mut active_datafile) = init_new_file();
-
-
-    let kvlist = vec![
-        ("key1".to_string(), "val1".to_string()),
-        ("key2".to_string(), "1d".to_string()),
-        ("key3".to_string(), "typel3".to_string()),
-        ("key4".to_string(), "val4".to_string()),
-        ("key5".to_string(), "1".to_string()),
-        ("key6".to_string(), "val6".to_string()),
-        ("key7".to_string(), "val7".to_string()),
-        ("key8".to_string(), "a".to_string()),
-        ("key9".to_string(), "val9".to_string()),
-        ("key0".to_string(), "vThe lager typeal0".to_string()),
-    ];
-
-
-    for (key, value) in kvlist {
-        //println!("Inserting key: {}, offset: {}", key, offset);
-        let (new_pair, kmem_entry, new_offset) = set_kv(key, value, active_file_id, offset);
         key_set.push(kmem_entry);
+
         for _b in new_pair.to_bytes().iter() {
             active_datafile.push(*_b);
         }
+
         fs::write(format!("{}.kv", active_file_id), &active_datafile).unwrap();
-        offset = new_offset;
+
+        return new_offset;
     }
 
-    let test_kv = get_kv("key3".to_string(), &key_set);
-    println!("{}", test_kv);
+
+fn _on_start() -> (dbconfig::DatabaseConfig, u8, (u32, Vec<KMem>, Vec<u8>)) {
+    let config = dbconfig::load_config().unwrap();
+    let active_file_id: u8 = init_file_id(config.directorypath.as_str());
+
+    return (config, active_file_id, init_new_file());
+}
+
+
+fn _check_and_rollover(active_file_id: u8, offset: u32, maxdatafilelength: u32, key_set: &mut Vec<KMem>, active_datafile: &mut Vec<u8>) -> (u8, u32) {
+    if offset >= maxdatafilelength {
+        let new_file_id = active_file_id + 1;
+        let (new_offset, new_keyset, new_datafile) = init_new_file();
+        *key_set = new_keyset;
+        *active_datafile = new_datafile;
+        return (new_file_id, new_offset);
+    }
+    return (active_file_id, offset);
+}
+
+
+
+
+
+
+
+fn main() {
+
+    let (_config, active_file_id, (offset, mut key_set, mut active_datafile)) = _on_start();
+
+    loop {
+
+        let (mut active_file_id, mut offset) = _check_and_rollover(active_file_id, offset, _config.maxdatafilelength, &mut key_set, &mut active_datafile);
+
+        println!("Enter command add/get/exit: ");
+        let mut input_type = String::new();
+        std::io::stdin().read_line(&mut input_type).expect("Failed to read line");
+        let input_type = input_type.trim().to_lowercase();
+
+
+        if input_type.starts_with("a") {
+
+            println!("Enter key: ");
+            let mut key = String::new();
+            std::io::stdin().read_line(&mut key).expect("Failed to read line");
+            let key = key.trim().to_string();
+
+            if key.len() > _config.keymaxlength as usize {
+                println!("Error: Key length exceeds maximum length of {}", _config.keymaxlength);
+                continue;
+            }
+
+            println!("Enter value: ");
+            let mut value = String::new();
+            std::io::stdin().read_line(&mut value).expect("Failed to read line");
+            let value = value.trim().to_string();
+
+            if value.len() > _config.valuemaxlength as usize {
+                println!("Error: Value length exceeds maximum length of {}", _config.valuemaxlength);
+                continue;
+            }
+
+            offset = add_new_kv(key, value, active_file_id, offset, &mut key_set, &mut active_datafile);
+            println!("Key-Value pair added.");
+
+        } 
+        else if input_type.starts_with("g") {
+
+            println!("Enter key to retrieve: ");
+            let mut key = String::new();
+            std::io::stdin().read_line(&mut key).expect("Failed to read line");
+            let key = key.trim().to_string();
+
+            if key.len() > _config.keymaxlength as usize {
+                println!("Error: Key length exceeds maximum length of {}", _config.keymaxlength);
+                continue;
+            } 
+
+            let value = get_kv(key, &key_set);
+            if value.is_empty() {
+                println!("Key not found.");
+            } else {
+                println!("Retrieved value: {}", value);
+            }
+
+        } 
+        else if input_type.starts_with("e") {
+            break;
+        } 
+        else {
+            println!("Unknown command.");
+        }
+    }
+
 
 }
+
+
+
+// fn _test_add_kv() {
+
+//         let kvlist = vec![
+//         ("key1".to_string(), "val1".to_string()),
+//         ("key2".to_string(), "1d".to_string()),
+//         ("key3".to_string(), "typel3".to_string()),
+//         ("key4".to_string(), "val4".to_string()),
+//         ("key5".to_string(), "1".to_string()),
+//         ("key6".to_string(), "val6".to_string()),
+//         ("key7".to_string(), "val7".to_string()),
+//         ("key8".to_string(), "a".to_string()),
+//         ("key9".to_string(), "val9".to_string()),
+//         ("key0".to_string(), "vThe lager typeal0".to_string()),
+//     ];
+
+
+// }
+
+// fn _test_get_kv(keyset_mem: &Vec<KMem>) {
+
+//     let test_kv = get_kv("key3".to_string(), &keyset_mem);
+//     println!("{}", test_kv);
+// }

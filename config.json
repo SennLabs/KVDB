@@ -1,5 +1,5 @@
 {
-    "keymaxlength": 255,
+    "keymaxlength": 256,
     "valuemaxlength": 1024,
     "directorypath": "./",
     "maxdatafilelength": 10485760
