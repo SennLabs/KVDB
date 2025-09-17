@@ -1,10 +1,8 @@
 use std::fs;
 use std::fs::File;
-use std::io::Write;
 use std::io::Seek;
 use std::io::Read;
 use std::time::SystemTime;
-use std::str::Bytes;
 
 mod dbconfig;
 
@@ -173,7 +171,7 @@ fn main() {
 
     loop {
 
-        let (mut active_file_id, mut offset) = _check_and_rollover(active_file_id, offset, _config.maxdatafilelength, &mut key_set, &mut active_datafile);
+        let (active_file_id, mut offset) = _check_and_rollover(active_file_id, offset, _config.maxdatafilelength, &mut key_set, &mut active_datafile);
 
         println!("Enter command add/get/exit: ");
         let mut input_type = String::new();
