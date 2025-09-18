@@ -3,9 +3,14 @@ use std::fs::File;
 use std::io::Seek;
 use std::io::Read;
 use std::time::SystemTime;
+use std::collections::HashMap;
+
+
+use crate::dbconfig::DatabaseConfig;
+
 
 mod dbconfig;
-
+mod utilrand;
 
 struct KMem {
     key: String,
@@ -25,7 +30,7 @@ fn kmem_from_kvdata(data: &KVData, file_id: u8, voffset: u32) -> KMem {
     }
 }
 
-
+// Convert the u32 to 4 u8, in big endian style
 fn u32_to_4u8(x:u32) -> [u8;4] {
     let b1 : u8 = ((x >> 24) & 0xff) as u8;
     let b2 : u8 = ((x >> 16) & 0xff) as u8;
@@ -33,6 +38,12 @@ fn u32_to_4u8(x:u32) -> [u8;4] {
     let b4 : u8 = (x & 0xff) as u8;
     return [b1, b2, b3, b4]
 }
+
+fn u8set_to_u32(x:[u8;4]) -> u32 {
+    let b = u32::from_be_bytes(x);
+    return b;
+}
+
 
 struct KVData {
     timestamp: u32,
@@ -140,12 +151,14 @@ fn add_new_kv(newkey: String, newvalue: String, active_file_id: u8, offset: u32,
     }
 
 
+
 fn _on_start() -> (dbconfig::DatabaseConfig, u8, (u32, Vec<KMem>, Vec<u8>)) {
     let config = dbconfig::load_config().unwrap();
     let active_file_id: u8 = init_file_id(config.directorypath.as_str());
 
     return (config, active_file_id, init_new_file());
 }
+
 
 
 fn _check_and_rollover(active_file_id: u8, offset: u32, maxdatafilelength: u32, key_set: &mut Vec<KMem>, active_datafile: &mut Vec<u8>) -> (u8, u32) {
@@ -160,6 +173,54 @@ fn _check_and_rollover(active_file_id: u8, offset: u32, maxdatafilelength: u32, 
 }
 
 
+fn _parse_datafile(mut datafile: File) {
+
+    //let file_buffer = datafile.read_to_end(buf)
+    let mut offset: u32 = 0;
+    //let mut buffer: [u8; 4] = [0; 4];
+
+    let mut buffer = vec![0; 12 as usize];
+
+    loop {
+        datafile.seek(std::io::SeekFrom::Start(offset as u64)).unwrap();
+        datafile.read_exact(&mut buffer).unwrap();
+
+        let mut tmp_mem = Vec::new();
+        for u32_chunk in buffer.chunks_exact(4) {
+            tmp_mem.push(u8set_to_u32(u32_chunk.try_into().unwrap()));
+        }
+        println!("")
+
+    }
+}
+
+
+fn _rebuild_memstore(_config: DatabaseConfig, active_file_id: u8) {
+
+    let mut memstore_hashmap: HashMap<String, KMem> = HashMap::new();
+    
+    for i in 0..active_file_id {
+        let file_path = format!("{}{}.kv", _config.directorypath, i);
+        println!("Checking File {}",file_path);
+        match fs::exists(file_path) {
+            Ok(true) => {
+                let datafile = File::open(format!("{}{}.kv", _config.directorypath, i)).unwrap();
+                let tmp = _parse_datafile(datafile);
+            }
+            Ok(false) => {
+                println!("File does not exist")
+            }
+            Err(e)=> {
+                println!("Error checking file existence: {}", e)
+            }
+
+        }
+
+    }
+    
+
+
+}
 
 
 
@@ -167,94 +228,118 @@ fn _check_and_rollover(active_file_id: u8, offset: u32, maxdatafilelength: u32, 
 
 fn main() {
 
-    let (_config, active_file_id, (offset, mut key_set, mut active_datafile)) = _on_start();
+    let (_config, active_file_id, (mut offset, mut key_set, mut active_datafile)) = _on_start();
 
-    loop {
+    _rebuild_memstore(_config, active_file_id);
 
-        let (active_file_id, mut offset) = _check_and_rollover(active_file_id, offset, _config.maxdatafilelength, &mut key_set, &mut active_datafile);
+    //let kv_test = _test_add_kv();
 
-        println!("Enter command add/get/exit: ");
-        let mut input_type = String::new();
-        std::io::stdin().read_line(&mut input_type).expect("Failed to read line");
-        let input_type = input_type.trim().to_lowercase();
+    //for (key, value) in kv_test {
+    //    offset = add_new_kv(key, value, active_file_id, offset, &mut key_set, &mut active_datafile);
+    //}
 
 
-        if input_type.starts_with("a") {
+    // loop {
 
-            println!("Enter key: ");
-            let mut key = String::new();
-            std::io::stdin().read_line(&mut key).expect("Failed to read line");
-            let key = key.trim().to_string();
+    //     let (active_file_id, mut offset) = _check_and_rollover(active_file_id, offset, _config.maxdatafilelength, &mut key_set, &mut active_datafile);
 
-            if key.len() > _config.keymaxlength as usize {
-                println!("Error: Key length exceeds maximum length of {}", _config.keymaxlength);
-                continue;
-            }
+    //     println!("Enter command add/get/exit: ");
+    //     let mut input_type = String::new();
+    //     std::io::stdin().read_line(&mut input_type).expect("Failed to read line");
+    //     let input_type = input_type.trim().to_lowercase();
 
-            println!("Enter value: ");
-            let mut value = String::new();
-            std::io::stdin().read_line(&mut value).expect("Failed to read line");
-            let value = value.trim().to_string();
 
-            if value.len() > _config.valuemaxlength as usize {
-                println!("Error: Value length exceeds maximum length of {}", _config.valuemaxlength);
-                continue;
-            }
+    //     if input_type.starts_with("a") {
 
-            offset = add_new_kv(key, value, active_file_id, offset, &mut key_set, &mut active_datafile);
-            println!("Key-Value pair added.");
+    //         println!("Enter key: ");
+    //         let mut key = String::new();
+    //         std::io::stdin().read_line(&mut key).expect("Failed to read line");
+    //         let key = key.trim().to_string();
 
-        } 
-        else if input_type.starts_with("g") {
+    //         if key.len() > _config.keymaxlength as usize {
+    //             println!("Error: Key length exceeds maximum length of {}", _config.keymaxlength);
+    //             continue;
+    //         }
 
-            println!("Enter key to retrieve: ");
-            let mut key = String::new();
-            std::io::stdin().read_line(&mut key).expect("Failed to read line");
-            let key = key.trim().to_string();
+    //         println!("Enter value: ");
+    //         let mut value = String::new();
+    //         std::io::stdin().read_line(&mut value).expect("Failed to read line");
+    //         let value = value.trim().to_string();
 
-            if key.len() > _config.keymaxlength as usize {
-                println!("Error: Key length exceeds maximum length of {}", _config.keymaxlength);
-                continue;
-            } 
+    //         if value.len() > _config.valuemaxlength as usize {
+    //             println!("Error: Value length exceeds maximum length of {}", _config.valuemaxlength);
+    //             continue;
+    //         }
 
-            let value = get_kv(key, &key_set);
-            if value.is_empty() {
-                println!("Key not found.");
-            } else {
-                println!("Retrieved value: {}", value);
-            }
+    //         offset = add_new_kv(key, value, active_file_id, offset, &mut key_set, &mut active_datafile);
+    //         println!("Key-Value pair added.");
 
-        } 
-        else if input_type.starts_with("e") {
-            break;
-        } 
-        else {
-            println!("Unknown command.");
-        }
-    }
+    //     } 
+    //     else if input_type.starts_with("g") {
+
+    //         println!("Enter key to retrieve: ");
+    //         let mut key = String::new();
+    //         std::io::stdin().read_line(&mut key).expect("Failed to read line");
+    //         let key = key.trim().to_string();
+
+    //         if key.len() > _config.keymaxlength as usize {
+    //             println!("Error: Key length exceeds maximum length of {}", _config.keymaxlength);
+    //             continue;
+    //         } 
+
+    //         let value = get_kv(key, &key_set);
+    //         if value.is_empty() {
+    //             println!("Key not found.");
+    //         } else {
+    //             println!("Retrieved value: {}", value);
+    //         }
+
+    //     } 
+    //     else if input_type.starts_with("e") {
+    //         break;
+    //     } 
+    //     else {
+    //         println!("Unknown command.");
+    //     }
+    // }
 
 
 }
 
 
 
-// fn _test_add_kv() {
+fn _test_add_kv() -> Vec<(String,String)> {
 
-//         let kvlist = vec![
-//         ("key1".to_string(), "val1".to_string()),
-//         ("key2".to_string(), "1d".to_string()),
-//         ("key3".to_string(), "typel3".to_string()),
-//         ("key4".to_string(), "val4".to_string()),
-//         ("key5".to_string(), "1".to_string()),
-//         ("key6".to_string(), "val6".to_string()),
-//         ("key7".to_string(), "val7".to_string()),
-//         ("key8".to_string(), "a".to_string()),
-//         ("key9".to_string(), "val9".to_string()),
-//         ("key0".to_string(), "vThe lager typeal0".to_string()),
-//     ];
+    let mut char_list = utilrand::build_charset(vec!["alpha_lower".to_string(),"numeric".to_string()]);
+
+    let len_key = 12;
+    let len_val = 71;
+    let num_pair = 250;
+
+    let mut kvlist: Vec<(String,String)> = Vec::new();
+
+    for j in 0..num_pair {
+        let (key, val) = utilrand::gen_kv_pair(len_key,len_val, char_list.clone());
+        kvlist.push((key,val));
+    }
 
 
-// }
+    //     let kvlist = vec![
+    //     ("dbpzpyju88".to_string(), "belief romanian bridge profit".to_string()),
+    //     ("1e0djtng3x".to_string(), "arts started bundle disease".to_string()),
+    //     ("jfdresogpj".to_string(), "repeated smoky online daffodil".to_string()),
+    //     ("bamwzbnp63".to_string(), "keating post warburg johnson".to_string()),
+    //     ("j347yuk8ux".to_string(), "footpath fragrant trembling seltzer limes trend blurb reliant dosage aground anime tripping".to_string()),
+    //     ("udzsa7481p".to_string(), "footpath fragrant trembling seltzer limes trend blurb reliant dosage aground anime tripping".to_string()),
+    //     ("3vevcj00lf".to_string(), "efforts denying billed buy".to_string()),
+    //     ("qpc98fm7f4".to_string(), "whose category fonts mutual".to_string()),
+    //     ("hcou91nzgr".to_string(), "easing autonomy weight five".to_string()),
+    //     ("yvu2j7qf70".to_string(), "delay gradual asset centers".to_string()),
+    // ];
+
+    return kvlist;
+
+}
 
 // fn _test_get_kv(keyset_mem: &Vec<KMem>) {
 
