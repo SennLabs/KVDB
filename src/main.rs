@@ -175,13 +175,15 @@ fn _check_and_rollover(active_file_id: u8, offset: u32, maxdatafilelength: u32, 
 
 fn _parse_datafile(mut datafile: File) {
 
-    //let file_buffer = datafile.read_to_end(buf)
-    let mut offset: u32 = 0;
-    //let mut buffer: [u8; 4] = [0; 4];
+    let mut offset: u32 = 0 as u32;
 
-    let mut buffer = vec![0; 12 as usize];
+    let file_metadata = datafile.metadata().expect("File Missing Metadata");
+    let file_size = file_metadata.len() as u32;
+    
 
     loop {
+        let mut buffer = vec![0; 12 as usize];
+        println!("Offset {}",offset);
         datafile.seek(std::io::SeekFrom::Start(offset as u64)).unwrap();
         datafile.read_exact(&mut buffer).unwrap();
 
@@ -189,8 +191,40 @@ fn _parse_datafile(mut datafile: File) {
         for u32_chunk in buffer.chunks_exact(4) {
             tmp_mem.push(u8set_to_u32(u32_chunk.try_into().unwrap()));
         }
-        println!("")
 
+        offset = offset + 12;
+
+
+        let key_size = tmp_mem[1];
+        let mut key_buffer = vec![0; key_size as usize];
+
+        datafile.seek(std::io::SeekFrom::Start(offset as u64)).unwrap();
+        datafile.read_exact(&mut key_buffer).unwrap();
+
+        let key_tmp: String = key_buffer.try_into().unwrap();
+        
+        offset = offset + key_size;
+
+        let val_size = tmp_mem[2];
+        let mut val_buffer = vec![0; val_size as usize];
+
+        datafile.seek(std::io::SeekFrom::Start(offset as u64)).unwrap();
+        datafile.read_exact(&mut val_buffer).unwrap();
+
+        let val_tmp: String = val_buffer.try_into().unwrap();
+
+        println!("Timecode: {}",tmp_mem[0]);
+        println!("Key: {}  Value: {}",key_tmp,val_tmp);
+        println!("ksz: {}  vsz: {}",key_size,val_size);
+        println!("k-s: {}  v-s: {}",key_tmp.as_bytes().len() as u32,val_tmp.as_bytes().len() as u32);
+
+        offset = offset + val_size;
+        
+        
+        if offset >= file_size {
+            println!("EOF");
+            break;
+        }
     }
 }
 
