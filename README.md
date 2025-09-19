@@ -4,22 +4,39 @@ Loosely based on BitCask
 
 Intended to minimize use of external packages
 
-
-CRC is to be added
-Add more useful io binding
+## To Do:
+- [X] Add rebuild memstore function for complete rebuild
+- [ ] Add hint file 
+- [ ] Review Lengths of each segment
+- [ ] Add deletion function
+- [ ] Add update function
+- [ ] Add CRC
+- [ ] Build Application Interface
+- [ ] Build IPC interface
+- [ ] Remove external packages (serde, config)
 
 
 The in-memory key is made of:
-key - string
-file_id - unsigned 8-bit integer
-timestamp - time since epoch in sec as u32
-vsz - length of the value as u32
-voffset - value start location in the datafile u32
+
+| name | datatype | description |
+| --- | --- | --- |
+| key | string | key as string |
+| file_id | u8 | int that specifies the datafile |
+| timestamp | u32 | seconds from unix epoch |
+| vsz | u32 | length of the paired value |
+| voffset | u32 | index for the start of the value data in the file |
+
 
 The datafile is built of:
-timestamp - time since epoch in sec as u32
-ksz - length of the key as u32
-vsz - length of the value as u32
-key - string
-value - string
+
+| name | datatype | description |
+| --- | --- | --- |
+| timestamp | u32 | seconds from unix epoch |
+| ksz | u32 | length of the key |
+| vsz | u32 | length of the paired value |
+| key | str | key string |
+| value | str | value string |
+
+
+
 
