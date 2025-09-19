@@ -264,13 +264,6 @@ fn main() {
 
     let (_config, active_file_id, mut mem_keymap, (mut offset, mut active_datafile)) = _on_start();
 
-    let kv_test = _test_add_kv();
-
-    for (key, value) in kv_test {
-        (offset,mem_keymap) = add_new_kv(key, value, active_file_id, offset, mem_keymap, &mut active_datafile);
-    }
-
-
     loop {
         let (active_file_id, mut offset, mut active_datafile) = _check_and_rollover(active_file_id, offset, _config.maxdatafilelength, &mut active_datafile);
 
