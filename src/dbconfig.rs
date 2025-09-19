@@ -1,7 +1,7 @@
 use serde::Deserialize;
 use config::{Config, ConfigError, File};
 
-#[derive(Debug, Deserialize)]
+#[derive(Debug, Deserialize, Clone)]
 pub struct DatabaseConfig {
     pub keymaxlength: u8,
     pub valuemaxlength: u16,
