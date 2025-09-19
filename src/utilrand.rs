@@ -2,7 +2,7 @@ use std::collections::HashMap;
 
 //use rand::distributions::{Alphanumeric, DistString};
 
-use rand::{prelude::*, seq::index::sample};
+use rand::{prelude::*};
 
 
 fn standard_charset()  -> HashMap<String, Vec<char>> {
@@ -57,7 +57,7 @@ pub fn gen_kv_pair(key_length: u32, value_length: u32, chardict: Vec<char>) -> (
 // }
 
 
-fn main() {
-    let char_opt = vec!["alpha_lower".to_string()];
-    let mut new_set = build_charset(char_opt);
-}
+// fn main() {
+//     let char_opt = vec!["alpha_lower".to_string()];
+//     let mut new_set = build_charset(char_opt);
+// }

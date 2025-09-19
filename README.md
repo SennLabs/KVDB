@@ -4,18 +4,15 @@ Loosely based on BitCask
 
 Intended to minimize use of external packages
 
-
-CRC is to be added
-Add more useful i/o binding
-
-
 ## To Do:
+- [X] Add rebuild memstore function for complete rebuild
+- [ ] Add hint file 
 - [ ] Review Lengths of each segment
-- [ ] Add rebuild memstore function
 - [ ] Add deletion function
 - [ ] Add update function
 - [ ] Add CRC
-- [ ] Build Interface
+- [ ] Build Application Interface
+- [ ] Build IPC interface
 - [ ] Remove external packages (serde, config)
 
 
