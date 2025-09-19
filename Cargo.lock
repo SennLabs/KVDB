@@ -3,6 +3,15 @@
 version = 4
 
 [[package]]
+name = "KVDB"
+version = "0.1.0"
+dependencies = [
+ "config",
+ "rand",
+ "serde",
+]
+
+[[package]]
 name = "arraydeque"
 version = "0.5.1"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -392,15 +401,6 @@ dependencies = [
  "bitflags",
  "serde",
  "serde_derive",
-]
-
-[[package]]
-name = "ru_kv_database"
-version = "0.1.0"
-dependencies = [
- "config",
- "rand",
- "serde",
 ]
 
 [[package]]

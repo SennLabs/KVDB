@@ -34,7 +34,6 @@ pub fn gen_kv_pair(key_length: u32, value_length: u32, chardict: Vec<char>) -> (
     let mut rng = rand::rng();
 
     let mut key_char_vec = Vec::new();
-
     let mut val_char_vec = Vec::new();
 
     for _j in 0..key_length {
@@ -51,13 +50,3 @@ pub fn gen_kv_pair(key_length: u32, value_length: u32, chardict: Vec<char>) -> (
 
 }
 
-
-// fn example_wordlist() {
-//     let wordlist = ["apple","banana","car","dog","elephant","fish","grape","house","ice","jungle","kite","lamp","moon","nest","orange","pen","queen","river","sun","tree","umbrella","violin","whale","xylophone","yarn","zebra","air","book","cloud","dance","earth","fire","glass","hill","island","jacket","key","leaf","mountain","night","ocean","plant","quiet","rain","snow","table","under","voice","wind","xenon","yard","zero","ant","bread","circle","door","egg","flag","game","hat","ink","jam","king","line","milk","net","owl","pig","quilt","road","star","train","unit","vase","wall","axe","yolk","zone","arch","brick","coin","drum","engine","farm","gold","hammer","iron","jewel","knife","log","mirror","nail","oil","pipe","quartz","rope","stone","tent","urn","valley","wheel"];
-// }
-
-
-// fn main() {
-//     let char_opt = vec!["alpha_lower".to_string()];
-//     let mut new_set = build_charset(char_opt);
-// }

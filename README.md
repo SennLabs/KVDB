@@ -6,7 +6,7 @@ Intended to minimize use of external packages
 
 ## To Do:
 - [X] Add rebuild memstore function for complete rebuild
-- [ ] Add hint file 
+- [ ] Add hint file support
 - [ ] Review Lengths of each segment
 - [ ] Add deletion function
 - [ ] Add update function
